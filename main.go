@@ -1,0 +1,185 @@
+package main
+
+import (
+	"bytes"
+	"compress/zlib"
+	"crypto/sha1"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+)
+
+func main() {
+
+	args := os.Args
+	command(args[1], args)
+	// generate hash using message digest
+	// read the contents of the generated hash using cat-file command
+	// follow the guide for hash-object command.
+	// later try to create or replicate the easy functionalities of git in this.
+	// use cobra module to get the args from command line
+
+}
+
+func command(arg string, args []string) {
+
+	switch arg {
+	case "init":
+		initVcs()
+	case "add":
+		add(args)
+	case "cat-file":
+		commandCatFile(args)
+	default:
+		help()
+	}
+}
+
+func initVcs() {
+	for _, dir := range []string{".vcs", ".vcs/objects", ".vcs/refs"} {
+		err := os.Mkdir(dir, 0755)
+		check(err)
+	}
+
+	contentsOfHeadFile := []byte("ref: refs/heads/main\n")
+	if err := os.WriteFile(".vcs/HEAD", contentsOfHeadFile, 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing files -> %s\n", err)
+	}
+
+	fmt.Println("Initialized vcs dir")
+
+}
+
+// whenever we add a file to git it will create a hash from the content of the file
+// and stores it in the objects folder with dir/filename
+// dir -> first two chars of the hash and filename -> rest of the hash
+func add(args []string) {
+	fmt.Println(args[2:])
+
+	for _, val := range args[2:] {
+		if _, err := os.Stat(val); err != nil {
+			fmt.Printf("%s Not a valid dir or file\n", val)
+		}
+	}
+
+	// before hashing the file with args[2] which the file path
+	// read the contents of the file and then create a hash
+
+	contentsOfFile, err := os.ReadFile(args[2])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to add file -> %s\n", err)
+		os.Exit(1)
+	}
+
+	// creating a blob to store with a header which contains length of the content blob
+	// then append the file content to the header
+	header := fmt.Sprintf("blob %d\x00", len(contentsOfFile))
+	blobStore := append([]byte(header), contentsOfFile...)
+
+	// create hash for the blob store which is combination of header and file content
+	h := sha1.New()
+	h.Write(blobStore)
+	bs := h.Sum(nil)
+
+	// dir -> first two chars of the hash and filename -> rest of the hash
+	dirPath := fmt.Sprintf("%x", bs[:1])
+	filePath := fmt.Sprintf("%x", bs[1:])
+	fullDirPath := filepath.Join(".vcs", "objects", dirPath)
+	fullFilePath := filepath.Join(fullDirPath, filePath)
+
+	if err := os.MkdirAll(fullDirPath, 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating object dir: %s\n", err)
+		os.Exit(1)
+	}
+
+	// compress and store the blob with zlib compressor
+	var compressed bytes.Buffer
+	w := zlib.NewWriter(&compressed)
+	w.Write(blobStore)
+	w.Close()
+
+	if err := os.WriteFile(fullFilePath, compressed.Bytes(), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing object: %s\n", err)
+		os.Exit(1)
+	}
+
+	// same happens when we do the commit as well
+	// but the hash generated is different than the add command
+
+}
+
+// this is what it spits out when cat-file is done for the hash generated after commit command
+// tree fcb545d5746547a597811b7441ed8eba307be1ff
+// author Keshava Kommaraju <keshavrao0489@gmail.com> 1742390280 +0530
+// committer Keshava Kommaraju <keshavrao0489@gmail.com> 1742390280 +0530
+
+// when created a new branch a new file is created in the .git/refs/ folder with branch name.
+// this will be used to check where the reference is right at.
+// as there will be a hash created for each commit, so cherry-pick is picking the changes by decoding the hash and applying them.
+// Things to following, when hashing will the contents of the file be hashed or only the metadata.
+// If only the metadata then how to get the content back.
+
+func commandCatFile(args []string) {
+
+	if len(args) != 4 {
+		fmt.Fprint(os.Stderr, "usage: vcs cat-file -p <object-hash>\n")
+	}
+
+	flag := args[2]
+	hash := args[3]
+
+	if flag != "-p" && len(hash) != 40 {
+		fmt.Fprintf(os.Stderr, "usage: vcs cat-file -p <object-hash>\n")
+		os.Exit(1)
+	}
+
+	dirName := hash[:2]
+	fileName := hash[2:]
+	filePath := filepath.Join(".vcs", "objects", dirName, fileName)
+
+	fmt.Printf("file path %s", filePath)
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to read file -> %s\n", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	zr, err := zlib.NewReader(file)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error decompressing object: %s\n", err)
+		os.Exit(1)
+	}
+	defer zr.Close()
+
+	contents, err := io.ReadAll(zr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading decompressed content: %s\n", err)
+		os.Exit(1)
+	}
+
+	// Split header and content
+	nullIndex := bytes.IndexByte(contents, 0)
+	if nullIndex == -1 {
+		fmt.Fprintln(os.Stderr, "Malformed object")
+		os.Exit(1)
+	}
+
+	content := contents[nullIndex+1:]
+	fmt.Print(string(content))
+
+}
+
+func help() {
+	fmt.Println("this is a WIP")
+}
+
+func check(e error) {
+	if e != nil {
+		if !os.IsExist(e) {
+			fmt.Fprintf(os.Stderr, "Error creating directory for vcs -> %s\n", e)
+		}
+	}
+}

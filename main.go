@@ -29,11 +29,20 @@ func command(arg string, args []string) {
 		initVcs()
 	case "add":
 		add(args)
+	case "status":
+		status()
 	case "cat-file":
 		commandCatFile(args)
+	case "hash-object":
+		hash, _ := hashContent(args)
+		fmt.Println(hash)
 	default:
 		help()
 	}
+}
+
+func status() {
+	fmt.Println("status of the vcs work tree")
 }
 
 func initVcs() {
@@ -51,20 +60,9 @@ func initVcs() {
 
 }
 
-// whenever we add a file to git it will create a hash from the content of the file
-// and stores it in the objects folder with dir/filename
-// dir -> first two chars of the hash and filename -> rest of the hash
-func add(args []string) {
-	fmt.Println(args[2:])
-
-	for _, val := range args[2:] {
-		if _, err := os.Stat(val); err != nil {
-			fmt.Printf("%s Not a valid dir or file\n", val)
-		}
-	}
-
-	// before hashing the file with args[2] which the file path
-	// read the contents of the file and then create a hash
+// this is equivalent to git's hash-object function
+// due to lack of creativity using same flag name in here.
+func hashContent(args []string) (string, []byte) {
 
 	contentsOfFile, err := os.ReadFile(args[2])
 	if err != nil {
@@ -80,13 +78,28 @@ func add(args []string) {
 	// create hash for the blob store which is combination of header and file content
 	h := sha1.New()
 	h.Write(blobStore)
-	bs := h.Sum(nil)
+	return fmt.Sprintf("%x", h.Sum(nil)), blobStore
 
-	// dir -> first two chars of the hash and filename -> rest of the hash
-	dirPath := fmt.Sprintf("%x", bs[:1])
-	filePath := fmt.Sprintf("%x", bs[1:])
-	fullDirPath := filepath.Join(".vcs", "objects", dirPath)
-	fullFilePath := filepath.Join(fullDirPath, filePath)
+}
+
+// whenever we add a file to git it will create a hash from the content of the file
+// and stores it in the objects folder with dir/filename
+// dir -> first two chars of the hash and filename -> rest of the hash
+func add(args []string) {
+	fmt.Println(args[2:])
+
+	for _, val := range args[2:] {
+		if _, err := os.Stat(val); err != nil {
+			fmt.Printf("%s Not a valid dir or file\n", val)
+		}
+	}
+
+	// before hashing the file with args[2] which the file path
+	// read the contents of the file and then create a hash
+	hashBs, blobStore := hashContent(args)
+
+	fullDirPath := filepath.Join(".vcs", "objects", hashBs[:2])
+	fullFilePath := filepath.Join(fullDirPath, hashBs[2:])
 
 	if err := os.MkdirAll(fullDirPath, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating object dir: %s\n", err)

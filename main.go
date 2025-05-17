@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	hash_length         int = 40
-	cat_file_cmd_length int = 4
+	hashLength       int    = 40
+	catFileCmdLength int    = 4
+	parentDir        string = ".vcs"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func status() {
 }
 
 func initVcs() {
-	for _, dir := range []string{".vcs", ".vcs/objects", ".vcs/refs"} {
+	for _, dir := range []string{parentDir, ".vcs/objects", ".vcs/objects/pack", ".vcs/objects/info", ".vcs/refs"} {
 		err := os.Mkdir(dir, 0755)
 		check(err)
 	}
@@ -99,7 +100,7 @@ func add(args []string) {
 	// read the contents of the file and then create a hash
 	hashBs, blobStore := hashContent(args)
 
-	fullDirPath := filepath.Join(".vcs", "objects", hashBs[:2])
+	fullDirPath := filepath.Join(parentDir, "objects", hashBs[:2])
 	fullFilePath := filepath.Join(fullDirPath, hashBs[2:])
 
 	if err := os.MkdirAll(fullDirPath, 0755); err != nil {
@@ -136,21 +137,21 @@ func add(args []string) {
 
 func commandCatFile(args []string) {
 
-	if len(args) != cat_file_cmd_length {
+	if len(args) != catFileCmdLength {
 		fmt.Fprint(os.Stderr, "usage: vcs cat-file -p <object-hash>\n")
 	}
 
 	flag := args[2]
 	hash := args[3]
 
-	if flag != "-p" && len(hash) != hash_length {
+	if flag != "-p" && len(hash) != hashLength {
 		fmt.Fprintf(os.Stderr, "usage: vcs cat-file -p <object-hash>\n")
 		os.Exit(1)
 	}
 
 	dirName := hash[:2]
 	fileName := hash[2:]
-	filePath := filepath.Join(".vcs", "objects", dirName, fileName)
+	filePath := filepath.Join(parentDir, "objects", dirName, fileName)
 
 	fmt.Printf("file path %s", filePath)
 

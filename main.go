@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"text/tabwriter"
 )
 
 const (
@@ -188,7 +189,20 @@ func commandCatFile(args []string) {
 }
 
 func help() {
-	fmt.Println("this is a WIP")
+	fmt.Println("Usage:")
+	fmt.Println("  vcs <command> [options]")
+
+	fmt.Println("Available Commands:")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "init\tInitialize a new VCS repository")
+	fmt.Fprintln(w, "add\tAdd file contents to the index")
+	fmt.Fprintln(w, "cat-file\tProvide content or type of repository objects")
+	fmt.Fprintln(w, "status\tShow the working tree status")
+	fmt.Fprintln(w, "commit\tRecord changes to the repository")
+	fmt.Fprintln(w, "ignore\tSpecify intentionally untracked files")
+	w.Flush()
+
+	fmt.Println("\nUse \"vcs <command> --help\" for more information about a command.")
 }
 
 func check(e error) {

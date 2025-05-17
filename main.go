@@ -10,13 +10,15 @@ import (
 	"path/filepath"
 )
 
+const (
+	hash_length         int = 40
+	cat_file_cmd_length int = 4
+)
+
 func main() {
 
 	args := os.Args
 	command(args[1], args)
-	// generate hash using message digest
-	// read the contents of the generated hash using cat-file command
-	// follow the guide for hash-object command.
 	// later try to create or replicate the easy functionalities of git in this.
 	// use cobra module to get the args from command line
 
@@ -55,7 +57,6 @@ func initVcs() {
 	if err := os.WriteFile(".vcs/HEAD", contentsOfHeadFile, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing files -> %s\n", err)
 	}
-
 	fmt.Println("Initialized vcs dir")
 
 }
@@ -135,14 +136,14 @@ func add(args []string) {
 
 func commandCatFile(args []string) {
 
-	if len(args) != 4 {
+	if len(args) != cat_file_cmd_length {
 		fmt.Fprint(os.Stderr, "usage: vcs cat-file -p <object-hash>\n")
 	}
 
 	flag := args[2]
 	hash := args[3]
 
-	if flag != "-p" && len(hash) != 40 {
+	if flag != "-p" && len(hash) != hash_length {
 		fmt.Fprintf(os.Stderr, "usage: vcs cat-file -p <object-hash>\n")
 		os.Exit(1)
 	}

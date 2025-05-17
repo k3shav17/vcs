@@ -1,12 +1,12 @@
 # VCS - Version Control System
 
-**VCS** is an opinionated Git clone written in Go. It is a minimal, educational version control system designed to help developers understand how Git works at the object level — from hashing and content storage to plumbing commands like `cat-file`.
+**VCS** is an opinionated Git clone written in Go. It is a minimal, educational version control system designed to help developers understand how Git works at the object level from hashing and content storage to plumbing commands like `cat-file`.
 
-> ⚠️ This project is for learning purposes only. It is not intended for production use.
+> This project is for learning purposes only. It is not intended for production use.
 
 ---
 
-## ✅ Current Features
+## Current Features
 
 ### `vcs init`
 Initializes a new VCS repository by creating the `.vcs/` directory structure:
@@ -34,7 +34,7 @@ Ignores files and directories listed in a `.vcsignore` file during the `add` pro
 
 ---
 
-## 🛠️ Upcoming Features
+## Functionality Working on
 
 ### `vcs status`
 - Will show tracked and untracked changes
@@ -44,21 +44,17 @@ Ignores files and directories listed in a `.vcsignore` file during the `add` pro
 - Will snapshot the current state of the index (added files)
 - Add commit metadata like author, timestamp, and message
 
-### `vcs cherry-pick <commit>`
-- Will apply changes from a specified commit onto the current HEAD
-
 ---
 
-## 🧱 Project Goals
+## Project Goals
 
 - Replicate key Git internals from scratch
 - Learn how Git manages objects, trees, and refs
 - Build an extensible CLI using Go and Cobra
-- Enable experimentation with version control logic
 
 ---
 
-## 🧪 Getting Started
+## Getting Started
 
 ```bash
 # Build the binary

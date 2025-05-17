@@ -57,18 +57,7 @@ Ignores files and directories listed in a `.vcsignore` file during the `add` pro
 ## Getting Started
 
 ```bash
-# Build the binary
-go build -o vcs
 
-# Initialize a VCS repo
-./vcs init
+git clone https://github.com/k3shav17/vcs.git
+cd vcs && make install
 
-# Add a file
-echo "hello world" > test.txt
-./vcs add test.txt
-
-# Ignore some files
-echo "*.log" > .vcsignore
-
-# Read object content from hash
-./vcs cat-file -p <hash-of-test.txt>
